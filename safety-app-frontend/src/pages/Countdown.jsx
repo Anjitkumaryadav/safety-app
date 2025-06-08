@@ -7,9 +7,8 @@ const Countdown = () => {
   const [cancelled, setCancelled] = useState(false);
   const navigate = useNavigate();
 
-  const user = JSON.parse(localStorage.getItem('user')); // name, phone, emergency1, emergency2
-  const ride = JSON.parse(localStorage.getItem('ride')); // vehicle, mass, safeDeceleration
-
+  const user = JSON.parse(localStorage.getItem('user'));
+  const ride = JSON.parse(localStorage.getItem('ride')); 
   useEffect(() => {
     if (cancelled) return;
 
@@ -28,7 +27,7 @@ const Countdown = () => {
 
   const sendAlert = async () => {
     try {
-      const res = await axios.post('http://localhost:5000/api/alert/send', {
+      const res = await axios.post('https://safety-app-mc1t.onrender.com/api/alert/send', {
         user,
         ride,
         location: await getLocation()

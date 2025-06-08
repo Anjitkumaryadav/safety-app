@@ -18,7 +18,7 @@ const Register = () => {
 
   const register = async () => {
     try {
-      const res = await axios.post('http://localhost:5000/api/users/register', form);
+      const res = await axios.post('https://safety-app-mc1t.onrender.com/api/users/register', form);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       navigate('/ride');
     } catch (err) {
