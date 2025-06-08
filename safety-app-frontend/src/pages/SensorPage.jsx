@@ -1,57 +1,77 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const SensorPage = () => {
   const navigate = useNavigate();
-  const [accident, setAccident] = useState(false);
 
   const [speed, setSpeed] = useState(0); // m/s
-  const [lastSpeed, setLastSpeed] = useState(0);
   const [acceleration, setAcceleration] = useState(0); // m/s²
   const [rotation, setRotation] = useState(0); // deg/s
+  const [accident, setAccident] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(false);
 
-  useEffect(() => {
-    const ride = JSON.parse(localStorage.getItem('ride'));
+  const lastSpeedRef = useRef(0);
+  const lastTimestampRef = useRef(null);
 
-    // Simulated speed data via device motion
+  const ride = JSON.parse(localStorage.getItem('ride') || '{}');
+  const safeDeceleration = ride?.safeDeceleration || 15; 
+
+  const startMonitoring = () => {
+    setIsMonitoring(true);
+
     const motionHandler = (event) => {
-      const acc = event.accelerationIncludingGravity;
+      const acc = event.acceleration;
 
-      if (acc?.x && acc?.y && acc?.z) {
+      if (acc?.x !== null && acc?.y !== null && acc?.z !== null) {
         const totalAcc = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
         setAcceleration(totalAcc);
 
-        const newSpeed = lastSpeed + totalAcc * 0.2; // assume 0.2s interval
-        setSpeed(newSpeed);
+        if (totalAcc < 0.2) return; 
+        const now = event.timeStamp;
+        const deltaTime = lastTimestampRef.current
+          ? (now - lastTimestampRef.current) / 1000
+          : 0.2;
+        lastTimestampRef.current = now;
 
-        // Accident check: sudden deceleration
-        const deceleration = (lastSpeed - newSpeed) / 0.2;
-        if (deceleration > ride.safeDeceleration) {
-          console.log('High deceleration detected:', deceleration);
+        const lastSpeed = lastSpeedRef.current;
+        const newSpeed = lastSpeed + totalAcc * deltaTime;
+
+        const clampedSpeed = Math.max(0, newSpeed);
+        setSpeed(clampedSpeed);
+        lastSpeedRef.current = clampedSpeed;
+
+        const deceleration = (lastSpeed - clampedSpeed) / deltaTime;
+        if (deceleration > safeDeceleration) {
+          console.log('Accident by deceleration:', deceleration);
           setAccident(true);
         }
-
-        setLastSpeed(newSpeed);
       }
     };
 
     const gyroHandler = (event) => {
-      const rot = Math.abs(event.rotationRate.alpha) + Math.abs(event.rotationRate.beta) + Math.abs(event.rotationRate.gamma);
+      const rotationRate = event.rotationRate;
+      if (!rotationRate) return;
+
+      const rot =
+        Math.abs(rotationRate.alpha || 0) +
+        Math.abs(rotationRate.beta || 0) +
+        Math.abs(rotationRate.gamma || 0);
+
       setRotation(rot);
       if (rot > 400) {
-        console.log('High rotation detected');
+        console.log('Accident by rotation:', rot);
         setAccident(true);
       }
     };
 
     window.addEventListener('devicemotion', motionHandler);
-    window.addEventListener('deviceorientation', gyroHandler);
+    window.addEventListener('devicemotion', gyroHandler);
 
     return () => {
       window.removeEventListener('devicemotion', motionHandler);
-      window.removeEventListener('deviceorientation', gyroHandler);
+      window.removeEventListener('devicemotion', gyroHandler);
     };
-  }, [lastSpeed]);
+  };
 
   useEffect(() => {
     if (accident) {
@@ -61,11 +81,24 @@ const SensorPage = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Monitoring Ride...</h2>
-      <p>Speed: {speed.toFixed(2)} m/s</p>
-      <p>Acceleration: {acceleration.toFixed(2)} m/s²</p>
-      <p>Gyroscope Activity: {rotation.toFixed(2)}</p>
-      <p style={{ color: 'red' }}>{accident ? 'Accident Detected! Redirecting...' : ''}</p>
+      <h2>Ride Monitoring</h2>
+
+      {!isMonitoring && (
+        <button onClick={startMonitoring} style={{ padding: '10px 20px' }}>
+          Start Ride
+        </button>
+      )}
+
+      {isMonitoring && (
+        <>
+          <p>Speed: {speed.toFixed(2)} m/s</p>
+          <p>Acceleration: {acceleration.toFixed(2)} m/s²</p>
+          <p>Gyroscope Activity: {rotation.toFixed(2)}</p>
+          <p style={{ color: 'red' }}>
+            {accident ? '⚠️ Accident Detected! Redirecting...' : ''}
+          </p>
+        </>
+      )}
     </div>
   );
 };
