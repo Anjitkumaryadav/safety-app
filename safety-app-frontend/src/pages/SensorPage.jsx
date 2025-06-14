@@ -10,11 +10,10 @@ const SensorPage = () => {
   const [accident, setAccident] = useState(false);
   const [isMonitoring, setIsMonitoring] = useState(false);
 
-  const lastSpeedRef = useRef(0);
   const lastTimestampRef = useRef(null);
 
   const ride = JSON.parse(localStorage.getItem('ride') || '{}');
-  const safeDeceleration = ride?.safeDeceleration || 15; 
+  const safeDeceleration = ride?.safeDeceleration || 15;
 
   const startMonitoring = () => {
     setIsMonitoring(true);
@@ -26,23 +25,19 @@ const SensorPage = () => {
         const totalAcc = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
         setAcceleration(totalAcc);
 
-        if (totalAcc < 0.2) return; 
+        if (totalAcc < 0.2) return;
+
         const now = event.timeStamp;
         const deltaTime = lastTimestampRef.current
           ? (now - lastTimestampRef.current) / 1000
           : 0.2;
         lastTimestampRef.current = now;
 
-        const lastSpeed = lastSpeedRef.current;
-        const newSpeed = lastSpeed + totalAcc * deltaTime;
+        const instantSpeed = totalAcc * deltaTime;
+        setSpeed(instantSpeed);
 
-        const clampedSpeed = Math.max(0, newSpeed);
-        setSpeed(clampedSpeed);
-        lastSpeedRef.current = clampedSpeed;
-
-        const deceleration = (lastSpeed - clampedSpeed) / deltaTime;
-        if (deceleration > safeDeceleration) {
-          console.log('Accident by deceleration:', deceleration);
+        if (totalAcc > safeDeceleration) {
+          console.log('Accident by high acceleration:', totalAcc);
           setAccident(true);
         }
       }
