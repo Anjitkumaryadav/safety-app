@@ -18,6 +18,7 @@ exports.createAlert = async (req, res) => {
     await sendSMS({ to: user.emergency1, message: smsText });
     await sendSMS({ to: user.emergency2, message: smsText });
 
+    console.log("alert send", user.emergency1, smsText,user.emergency2 )
     res.status(201).json({ success: true, alert });
   } catch (err) {
     console.error(err);

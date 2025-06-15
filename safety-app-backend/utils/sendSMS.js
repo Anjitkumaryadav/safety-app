@@ -14,7 +14,7 @@ exports.sendSMS = async ({ to, message }) => {
       from: twilioPhone,
       to,
     });
-    console.log('SMS sent! SID:', res.sid);
+    console.log('SMS sent! SID:', res.sid,message,twilioPhone, to);
   } catch (error) {
     console.error('Error sending SMS:', error.message);
   }

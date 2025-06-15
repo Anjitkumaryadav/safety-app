@@ -27,7 +27,7 @@ const Countdown = () => {
 
   const sendAlert = async () => {
     try {
-      const res = await axios.post('https://safety-app-mc1t.onrender.com/api/alert/send', {
+      const res = await axios.post('https://safety-app-mc1t.onrender.com/api/alerts/create', {
         user,
         ride,
         location: await getLocation()
